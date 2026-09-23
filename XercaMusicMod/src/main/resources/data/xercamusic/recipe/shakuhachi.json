@@ -1,9 +1,12 @@
 {
   "type": "minecraft:crafting_shaped",
-  "pattern": ["sss", " p "],
+  "pattern": [
+    "bbb"
+  ],
   "key": {
-    "s": "minecraft:stick",
-    "p": "#minecraft:planks"
+    "b": "minecraft:bamboo"
   },
-  "result": {"id": "xercamusic:shakuhachi"}
+  "result": {
+    "id": "xercamusic:shakuhachi"
+  }
 }

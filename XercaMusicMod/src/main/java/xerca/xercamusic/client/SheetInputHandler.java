@@ -40,6 +40,7 @@ class SheetInputHandler {
             int my = (int) Math.round(dmouseY);
             if (!gui.handleHelpClick(mx, my)) {
                 gui.helpOn = false;
+                gui.helpSearchFocused = false;
                 gui.updateButtons();
             }
             return true;
@@ -396,6 +397,18 @@ class SheetInputHandler {
     // --------- Keyboard Input ---------
 
     boolean handleKeyPressed(int keyCode, int scanCode, int modifiers) {
+        if (gui.helpOn) {
+            if (keyCode == GLFW.GLFW_KEY_ESCAPE || (keyCode == GLFW.GLFW_KEY_H && !gui.helpSearchFocused)) {
+                gui.helpOn = false;
+                gui.helpSearchFocused = false;
+                gui.updateButtons();
+            } else if (keyCode == GLFW.GLFW_KEY_BACKSPACE && gui.helpSearchFocused && !gui.helpSearch.isEmpty()) {
+                gui.helpSearch = gui.helpSearch.substring(0, gui.helpSearch.length() - 1);
+                gui.helpScrollOffset = 0;
+            }
+            return true;
+        }
+
         // Intercept ESC to cancel glissando mode without closing the screen
         if (keyCode == GLFW.GLFW_KEY_ESCAPE && gui.glissandoMode) {
             gui.glissandoMode = false;
@@ -622,6 +635,10 @@ class SheetInputHandler {
     }
 
     boolean handleCharTyped(char typedChar, int something) {
+        if (gui.helpOn) {
+            gui.handleHelpCharacter(typedChar);
+            return true;
+        }
         gui.callSuperCharTyped(typedChar, something);
 
         if (!gui.isSigned) {

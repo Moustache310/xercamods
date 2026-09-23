@@ -1,9 +1,15 @@
 {
   "type": "minecraft:crafting_shaped",
-  "pattern": ["iii", "ppp"],
+  "pattern": [
+    "pip",
+    " pg"
+  ],
   "key": {
     "i": "minecraft:iron_nugget",
-    "p": "#minecraft:planks"
+    "p": "#minecraft:planks",
+    "g": "minecraft:gold:nugget"
   },
-  "result": {"id": "xercamusic:small_music_box"}
+  "result": {
+    "id": "xercamusic:small_music_box"
+  }
 }

@@ -1,9 +1,14 @@
 {
   "type": "minecraft:crafting_shaped",
-  "pattern": ["sss", " p "],
+  "pattern": [
+    "sls",
+    "sls"
+  ],
   "key": {
     "s": "minecraft:stick",
-    "p": "#minecraft:planks"
+    "l": "minecraft:leather"
   },
-  "result": {"id": "xercamusic:bongos"}
+  "result": {
+    "id": "xercamusic:bongos"
+  }
 }

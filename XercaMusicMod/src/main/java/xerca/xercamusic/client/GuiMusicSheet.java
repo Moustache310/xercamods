@@ -17,6 +17,7 @@ import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.StringUtil;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -165,8 +166,6 @@ public class GuiMusicSheet extends Screen {
     static final int maxNoteLength = MAX_NOTE_LENGTH;
     boolean helpOn = false;
     int helpScrollOffset = 0;
-    private int helpContentHeight = 0;
-    private final int[] helpSectionContentY = new int[7];
     private int helpPanelX;
     private int helpPanelY;
     private int helpPanelW;
@@ -174,7 +173,14 @@ public class GuiMusicSheet extends Screen {
     private int helpTabY;
     private final int[] helpTabX = new int[7];
     private final int[] helpTabW = new int[7];
-    private static final int HELP_TAB_H = 12;
+    int selectedHelpSection;
+    String helpSearch = "";
+    boolean helpSearchFocused;
+    private int helpSearchX;
+    private int helpSearchY;
+    private int helpSearchW;
+    private int helpCloseX;
+    private int helpCloseY;
     private static final String[][] HELP_SECTIONS = {
         {"note.helpSection.mouse",
          "note.helpMouse1a", "note.helpMouse1b",
@@ -186,7 +192,8 @@ public class GuiMusicSheet extends Screen {
          "note.helpNav2a", "note.helpNav2b",
          "note.helpNav3a", "note.helpNav3b",
          "note.helpNav4a", "note.helpNav4b",
-         "note.helpNav5a", "note.helpNav5b"},
+         "note.helpNav5a", "note.helpNav5b",
+         "note.helpNav6a", "note.helpNav6b"},
         {"note.helpSection.playback",
          "note.helpPlay1a", "note.helpPlay1b",
          "note.helpPlay2a", "note.helpPlay2b",
@@ -725,7 +732,7 @@ public class GuiMusicSheet extends Screen {
         hlDown.active = editable && notRecording;
         sliderNoteVolume.visible = !hideForHelp && !hideForGlissando && !this.isSigned && !this.gettingSigned;
         sliderNoteVolume.active = sliderNoteVolume.visible && notRecording;
-        buttonHelp.visible = !this.isSigned && !this.gettingSigned;
+        buttonHelp.visible = !this.isSigned && !this.gettingSigned && !helpOn;
         buttonHelp.active = buttonHelp.visible && notRecording;
         buttonResetZoom.visible = buttonHelp.visible;
         buttonResetZoom.active = buttonResetZoom.visible && notRecording && zoomLevel != 0;
@@ -738,6 +745,7 @@ public class GuiMusicSheet extends Screen {
     void toggleHelp() {
         helpOn = !helpOn;
         helpScrollOffset = 0;
+        helpSearchFocused = false;
         updateButtons();
     }
 
@@ -811,13 +819,26 @@ public class GuiMusicSheet extends Screen {
     }
 
     boolean handleHelpClick(int mouseX, int mouseY) {
-        // Check tab clicks
-        if (mouseY >= helpTabY && mouseY < helpTabY + HELP_TAB_H) {
-            for (int i = 0; i < HELP_SECTIONS.length; i++) {
-                if (mouseX >= helpTabX[i] && mouseX < helpTabX[i] + helpTabW[i]) {
-                    helpScrollOffset = helpSectionContentY[i];
-                    return true;
-                }
+        if (mouseX >= helpCloseX && mouseX < helpCloseX + 20
+                && mouseY >= helpCloseY && mouseY < helpCloseY + 16) {
+            helpOn = false;
+            helpSearchFocused = false;
+            updateButtons();
+            return true;
+        }
+        if (mouseX >= helpSearchX && mouseX < helpSearchX + helpSearchW
+                && mouseY >= helpSearchY && mouseY < helpSearchY + 15) {
+            helpSearchFocused = true;
+            return true;
+        }
+        for (int i = 0; i < HELP_SECTIONS.length; i++) {
+            int tabY = helpTabY + 5 + i * 16;
+            if (mouseX >= helpTabX[i] && mouseX < helpTabX[i] + helpTabW[i]
+                    && mouseY >= tabY && mouseY < tabY + 15) {
+                selectedHelpSection = i;
+                helpScrollOffset = 0;
+                helpSearchFocused = false;
+                return true;
             }
         }
         // Click inside panel absorbs the click (keep help open)
@@ -1255,98 +1276,119 @@ public class GuiMusicSheet extends Screen {
 
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
 
-        if (requireWidget(this.buttonHelp, "buttonHelp").isHovered()) {
+        if (!helpOn && requireWidget(this.buttonHelp, "buttonHelp").isHovered()) {
             guiGraphics.setTooltipForNextFrame(font, Component.translatable("note.helpTooltip"), mouseX, mouseY);
         }
 
         if(helpOn) {
-            // === Scrollable help panel ===
-            int panelW = 380;
+            int panelW = 420;
             helpPanelX = (this.width - panelW) / 2;
             helpPanelY = 5;
             helpPanelBottom = this.height - 5;
             helpPanelW = panelW;
-
-            // Panel background + border
             guiGraphics.fill(helpPanelX, helpPanelY, helpPanelX + panelW, helpPanelBottom, 0xF0222222);
-            guiGraphics.fill(helpPanelX, helpPanelY, helpPanelX + panelW, helpPanelY + 1, 0xFF555555);
-            guiGraphics.fill(helpPanelX, helpPanelBottom - 1, helpPanelX + panelW, helpPanelBottom, 0xFF555555);
-            guiGraphics.fill(helpPanelX, helpPanelY, helpPanelX + 1, helpPanelBottom, 0xFF555555);
-            guiGraphics.fill(helpPanelX + panelW - 1, helpPanelY, helpPanelX + panelW, helpPanelBottom, 0xFF555555);
+            guiGraphics.fill(helpPanelX, helpPanelY, helpPanelX + panelW, helpPanelY + 1, 0xFF777777);
+            guiGraphics.fill(helpPanelX, helpPanelBottom - 1, helpPanelX + panelW, helpPanelBottom, 0xFF111111);
+            guiGraphics.fill(helpPanelX, helpPanelY, helpPanelX + 1, helpPanelBottom, 0xFF777777);
+            guiGraphics.fill(helpPanelX + panelW - 1, helpPanelY, helpPanelX + panelW, helpPanelBottom, 0xFF111111);
 
-            // Title (centered, bold)
-            String title = I18n.get("note.helpTitle");
-            guiGraphics.drawCenteredString(font, "§l" + title, helpPanelX + panelW / 2, helpPanelY + 4, 0xFFFFCC00);
+            guiGraphics.drawString(font, "§l" + I18n.get("note.helpTitle"), helpPanelX + 10, helpPanelY + 6, 0xFFFFCC00, false);
+            int searchX = helpPanelX + 176;
+            int searchY = helpPanelY + 4;
+            int searchW = panelW - 216;
+            helpSearchX = searchX;
+            helpSearchY = searchY;
+            helpSearchW = searchW;
+            guiGraphics.fill(searchX, searchY, searchX + searchW, searchY + 15, 0xFF111111);
+            guiGraphics.fill(searchX, searchY, searchX + searchW, searchY + 1, 0xFF777777);
+            String searchLabel = helpSearch.isEmpty() ? I18n.get("note.searchSection") : helpSearch;
+            guiGraphics.drawString(font, searchLabel, searchX + 4, searchY + 4,
+                    helpSearch.isEmpty() ? 0xFF888888 : 0xFFFFFFFF, false);
+            if (helpSearchFocused && (tickCount / 6) % 2 == 0) {
+                int cursorX = searchX + 4 + font.width(helpSearch);
+                if (cursorX < searchX + searchW - 3) {
+                    guiGraphics.fill(cursorX, searchY + 3, cursorX + 1, searchY + 13, 0xFFFFFFFF);
+                }
+            }
+            helpCloseX = helpPanelX + panelW - 25;
+            helpCloseY = helpPanelY + 4;
+                int closeBackground = (mouseX >= helpCloseX && mouseX < helpCloseX + 20
+                    && mouseY >= helpCloseY && mouseY < helpCloseY + 16) ? 0xFF666666 : 0xFF444444;
+            guiGraphics.fill(helpCloseX, helpCloseY, helpCloseX + 20, helpCloseY + 16, closeBackground);
+            guiGraphics.fill(helpCloseX, helpCloseY, helpCloseX + 20, helpCloseY + 1, 0xFF777777);
+            guiGraphics.fill(helpCloseX, helpCloseY + 15, helpCloseX + 20, helpCloseY + 16, 0xFF111111);
+            guiGraphics.drawCenteredString(font, "X", helpCloseX + 10, helpCloseY + 4, 0xFFFFFFFF);
 
-            // Tab bar
-            helpTabY = helpPanelY + 16;
-            guiGraphics.fill(helpPanelX + 1, helpTabY, helpPanelX + panelW - 1, helpTabY + HELP_TAB_H, 0xFF333333);
-
-            int tabX = helpPanelX + 4;
+            helpTabY = helpPanelY + 25;
+            int sidebarW = 105;
+            guiGraphics.fill(helpPanelX + 2, helpTabY, helpPanelX + sidebarW, helpPanelBottom - 2, 0xFF181818);
+            guiGraphics.fill(helpPanelX + sidebarW, helpTabY, helpPanelX + sidebarW + 1, helpPanelBottom - 2, 0xFF555555);
+            int tabX = helpPanelX + 7;
+            int tabY = helpTabY + 7;
             for (int i = 0; i < HELP_SECTIONS.length; i++) {
                 String tabLabel = I18n.get(HELP_SECTIONS[i][0]);
-                int tw = font.width(tabLabel);
-                helpTabX[i] = tabX;
-                helpTabW[i] = tw + 6;
-
-                // Highlight active section
-                boolean active;
-                if (i < HELP_SECTIONS.length - 1) {
-                    active = helpScrollOffset >= helpSectionContentY[i]
-                          && helpScrollOffset < helpSectionContentY[i + 1];
-                } else {
-                    active = helpScrollOffset >= helpSectionContentY[i];
+                helpTabX[i] = helpPanelX + 3;
+                helpTabW[i] = sidebarW - 5;
+                if (i == selectedHelpSection) {
+                    guiGraphics.fill(helpTabX[i], tabY - 2, helpTabX[i] + helpTabW[i], tabY + 10, 0xFF514525);
                 }
-                if (active) {
-                    guiGraphics.fill(tabX, helpTabY, tabX + helpTabW[i], helpTabY + HELP_TAB_H, 0xFF444477);
-                }
-                guiGraphics.drawString(font, tabLabel, tabX + 3, helpTabY + 2,
-                        active ? 0xFFFFFF55 : 0xFFAAAAAA, false);
-                tabX += helpTabW[i] + 2;
+                guiGraphics.drawString(font, tabLabel, tabX, tabY,
+                        i == selectedHelpSection ? 0xFFFFCC00 : 0xFFBBBBBB, false);
+                tabY += 16;
             }
 
-            // Content area
-            int helpContentTop = helpTabY + HELP_TAB_H + 2;
+            int helpContentTop = helpTabY + 7;
             int helpContentBottomY = helpPanelBottom - 2;
-            int contentX = helpPanelX + 6;
+            int contentX = helpPanelX + sidebarW + 12;
             int lineH = 10;
-            int sectionGap = 8;
-            int scrollAreaH = helpContentBottomY - helpContentTop;
-
-            // Clamp scroll
-            int maxScroll = Math.max(0, helpContentHeight - scrollAreaH);
-            helpScrollOffset = Math.clamp(helpScrollOffset, 0, maxScroll);
-
-            // Scissored scrollable content
-            guiGraphics.enableScissor(helpPanelX + 1, helpContentTop, helpPanelX + panelW - 6, helpContentBottomY);
-
-            int cy = helpContentTop - helpScrollOffset;
+            int scrollAreaH = helpContentBottomY - helpContentTop - 4;
+            String query = helpSearch.toLowerCase(Locale.ROOT);
+            boolean[] sectionHasMatches = new boolean[HELP_SECTIONS.length];
+            int matchingEntries = 0;
             for (int s = 0; s < HELP_SECTIONS.length; s++) {
-                helpSectionContentY[s] = cy - helpContentTop + helpScrollOffset;
                 String[] section = HELP_SECTIONS[s];
-
-                // Section header
-                guiGraphics.drawString(font, "§n§e" + I18n.get(section[0]),
-                        contentX, cy, 0xFFFFCC00, false);
-                cy += lineH + 2;
-
-                // Key-description entries
                 for (int i = 1; i < section.length; i += 2) {
-                    drawHelpLine(guiGraphics, contentX, cy,
-                            I18n.get(section[i]), I18n.get(section[i + 1]));
-                    cy += lineH;
+                    if (query.isEmpty() && s != selectedHelpSection) {
+                        continue;
+                    }
+                    if (query.isEmpty() || (I18n.get(section[i]) + " " + I18n.get(section[i + 1])).toLowerCase(Locale.ROOT).contains(query)) {
+                        sectionHasMatches[s] = true;
+                        matchingEntries++;
+                    }
                 }
-                cy += sectionGap;
             }
-            helpContentHeight = cy - helpContentTop + helpScrollOffset;
-
+            int sectionCount = 0;
+            for (boolean hasMatches : sectionHasMatches) {
+                if (hasMatches) {
+                    sectionCount++;
+                }
+            }
+            int contentHeight = sectionCount * 20 + matchingEntries * (lineH + 7);
+            int maxScroll = Math.max(0, contentHeight - scrollAreaH);
+            helpScrollOffset = Math.clamp(helpScrollOffset, 0, maxScroll);
+            guiGraphics.enableScissor(helpPanelX + sidebarW + 2, helpContentTop, helpPanelX + panelW - 5, helpContentBottomY);
+            int cy = helpContentTop + 2 - helpScrollOffset;
+            for (int s = 0; s < HELP_SECTIONS.length; s++) {
+                if (!sectionHasMatches[s]) {
+                    continue;
+                }
+                String[] section = HELP_SECTIONS[s];
+                guiGraphics.drawString(font, "§l" + I18n.get(section[0]), contentX, cy, 0xFFFFCC00, false);
+                cy += 18;
+                for (int i = 1; i < section.length; i += 2) {
+                    String key = I18n.get(section[i]);
+                    String desc = I18n.get(section[i + 1]);
+                    if (!query.isEmpty() && !(key + " " + desc).toLowerCase(Locale.ROOT).contains(query)) continue;
+                    drawHelpLine(guiGraphics, contentX, cy, key, desc);
+                    cy += lineH + 7;
+                }
+                cy += 2;
+            }
             guiGraphics.disableScissor();
-
-            // Scrollbar
-            if (helpContentHeight > scrollAreaH) {
+            if (contentHeight > scrollAreaH) {
                 int sbX = helpPanelX + panelW - 5;
-                float frac = (float) helpScrollOffset / Math.max(1, helpContentHeight - scrollAreaH);
-                int thumbH = Math.max(8, scrollAreaH * scrollAreaH / helpContentHeight);
+                float frac = (float) helpScrollOffset / Math.max(1, contentHeight - scrollAreaH);
+                int thumbH = Math.max(8, scrollAreaH * scrollAreaH / contentHeight);
                 int thumbY = helpContentTop + (int) ((scrollAreaH - thumbH) * frac);
                 guiGraphics.fill(sbX, helpContentTop, sbX + 3, helpContentBottomY, 0xFF333333);
                 guiGraphics.fill(sbX, thumbY, sbX + 3, thumbY + thumbH, 0xFF888888);
@@ -1494,6 +1536,15 @@ public class GuiMusicSheet extends Screen {
     private void drawHelpLine(GuiGraphics guiGraphics, int x, int y, String key, String desc) {
         guiGraphics.drawString(font, key + ": ", x, y, 0xFFDDDD44, false);
         guiGraphics.drawString(font, desc, x + font.width(key + ": "), y, 0xFFCCCCCC, false);
+    }
+
+    boolean handleHelpCharacter(char typedChar) {
+        if (helpOn && helpSearchFocused && StringUtil.isAllowedChatCharacter(typedChar) && helpSearch.length() < 32) {
+            helpSearch += typedChar;
+            helpScrollOffset = 0;
+            return true;
+        }
+        return false;
     }
 
     private void drawSelectionRect(GuiGraphics guiGraphics) {

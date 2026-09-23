@@ -1,9 +1,16 @@
 {
   "type": "minecraft:crafting_shaped",
-  "pattern": ["sss", " p "],
+  "pattern": [
+    "sts",
+    "sts",
+    " p "
+  ],
   "key": {
     "s": "minecraft:stick",
+    "t": "minecraft:string",
     "p": "#minecraft:planks"
   },
-  "result": {"id": "xercamusic:shamisen"}
+  "result": {
+    "id": "xercamusic:shamisen"
+  }
 }

@@ -1,9 +1,15 @@
 {
   "type": "minecraft:crafting_shaped",
-  "pattern": ["sss", " p "],
+  "pattern": [
+    "sss",
+    " gg",
+    "  g"
+  ],
   "key": {
     "s": "minecraft:stick",
-    "p": "#minecraft:planks"
+    "g": "#minecraft:gold_nugget"
   },
-  "result": {"id": "xercamusic:marimba"}
+  "result": {
+    "id": "xercamusic:marimba"
+  }
 }

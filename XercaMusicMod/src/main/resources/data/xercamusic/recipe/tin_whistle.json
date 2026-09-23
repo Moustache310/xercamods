@@ -1,9 +1,12 @@
 {
   "type": "minecraft:crafting_shaped",
-  "pattern": ["sss", " p "],
+  "pattern": [
+    "ggg"
+  ],
   "key": {
-    "s": "minecraft:stick",
-    "p": "#minecraft:planks"
+    "g": "minecraft:gold:nugget"
   },
-  "result": {"id": "xercamusic:tin_whistle"}
+  "result": {
+    "id": "xercamusic:tin_whistle"
+  }
 }

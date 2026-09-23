@@ -1,9 +1,15 @@
 {
   "type": "minecraft:crafting_shaped",
-  "pattern": ["sss", " p "],
+  "pattern": [
+    "nin",
+    "ppp"
+  ],
   "key": {
-    "s": "minecraft:stick",
+    "n": "minecraft:iron_nugget",
+    "i": "minecraft:iron_ingot",
     "p": "#minecraft:planks"
   },
-  "result": {"id": "xercamusic:glockenspiel"}
+  "result": {
+    "id": "xercamusic:glockenspiel"
+  }
 }
